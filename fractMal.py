@@ -6,14 +6,8 @@ from PIL import Image, ImageDraw
 Image.MAX_IMAGE_PIXELS = None
 
 """This program takes an image and tiles it, vertically and horizontally, and
-adds a colored line to the bottom of each row of images. It also crops the top
-and the left side of the image in order to fit certain software.
-Currently, these values must be hard-coded; that is, user input is not accepted
-after the script has been run.
-
-Parameters:
-newImMultH -- The number of tiles, vertically. Do NOT set below 1.
-newImMultW -- The number of tiles, horizontally. Do NOT set below 1.
+recolors each tile to match the RGB value of the corresponding pixel from the
+original image. RGB images of over 128x128 run into memory issues at the moment.
 """
 
 im = Image.open("64square.jpg")

@@ -9,8 +9,13 @@ Image.MAX_IMAGE_PIXELS = None
 recolors each tile to match the RGB value of the corresponding pixel from the
 original image. RGB images of over 128x128 run into memory issues at the moment.
 """
+filename = input("What is the file you wish to tile?: ")
+outname = input("What do you want to save the file as?: ")
+if not (".bmp" in outname or ".png" in outname or ".jpg" in outname):
+    outname += ".png"
+    print(outname)
 
-im = Image.open("64square.jpg")
+im = Image.open(filename)
 bw = im.copy().convert("L")
 mask = Image.new("RGBA", im.size, (0,0,0,123))
 newIm = Image.new("RGB", (im.width**2, im.height**2))
@@ -24,4 +29,4 @@ while r < im.height:
         c += 1
     r += 1
     c = 0
-newIm.save("64output.png")
+newIm.save(outname)

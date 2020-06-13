@@ -1,6 +1,6 @@
 __author__ = "Andrew Peña"
 __credits__ = ["Andrew Peña", "Malcolm Johnson"]
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __status__ = "Prototype"
 from PIL import Image
 Image.MAX_IMAGE_PIXELS = None

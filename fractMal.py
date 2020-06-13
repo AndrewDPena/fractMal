@@ -16,7 +16,7 @@ Image.MAX_IMAGE_PIXELS = None
 
 __author__ = "Andrew Peña"
 __credits__ = ["Andrew Peña", "Malcolm Johnson"]
-__version__ = "0.2.5"
+__version__ = "0.3.0"
 __status__ = "Prototype"
 
 filename = input("What is the file you wish to tile?: ")

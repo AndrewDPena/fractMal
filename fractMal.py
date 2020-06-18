@@ -16,7 +16,7 @@ Image.MAX_IMAGE_PIXELS = None
 
 __author__ = "Andrew Peña"
 __credits__ = ["Andrew Peña", "Malcolm Johnson"]
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 __status__ = "Prototype"
 
 filename = input("What is the file you wish to tile?: ")
@@ -29,15 +29,19 @@ mask = Image.new("RGBA", im.size, (0,0,0,123))
 previousFrame = im.convert("RGBA")
 frames = []
 for frame in ImageSequence.Iterator(im):
-    newIm = Image.new("RGB", (im.width**2, im.height**2))
+    newIm = Image.new("RGBA", (im.width**2, im.height**2), (0,0,0,0))
     row = col = 0
-    frame = frame.convert("RGBA")
     previousFrame.alpha_composite(frame)
-    gray = previousFrame.copy().convert("L")
+    gray = previousFrame.copy().convert("LA")
     while row < frame.height:
         while col < frame.width:
-            color = Image.new("RGB", frame.size, previousFrame.getpixel((col, row)))
-            comp = Image.composite(gray, color, mask).convert("RGB")
+            prevRGBA = previousFrame.getpixel((col, row))
+            tempGray = gray
+            if ((prevRGBA[3] == 0)):
+                tempGray = gray.convert("L")
+                prevRGBA = (0, 0, 0, 0)
+            color = Image.new("RGBA", frame.size, prevRGBA)
+            comp = Image.composite(tempGray, color, mask).convert("RGBA")
             newIm.paste(comp, (im.width * col, im.height * row))
             col += 1
         row += 1

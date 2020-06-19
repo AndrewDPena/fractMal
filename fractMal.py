@@ -10,6 +10,9 @@ Current Issues:
 - Works poorly on gifs with movement across a transparent background, since it
 simply pastes each frame over the previous frame
 
+- Saves two files for transparent gifs, Pillow's image library seems resistant
+to saving in place.
+
 Resources used:
 How to use alpha layer and Image.composite() to add a colored overlay
 https://stackoverflow.com/a/9208256
@@ -20,7 +23,7 @@ Image.MAX_IMAGE_PIXELS = None
 
 __author__ = "Andrew Peña"
 __credits__ = ["Andrew Peña", "Malcolm Johnson"]
-__version__ = "0.8.0"
+__version__ = "0.9.0"
 __status__ = "Prototype"
 
 def sanitize(imagedata):
@@ -64,23 +67,21 @@ for frame in ImageSequence.Iterator(im):
     # with motion over a transparent background. This needs to be re-thought.
     previousFrame.alpha_composite(frame.convert("RGBA"))
     # previousFrame = frame.convert("RGBA") # This doesn't work
-    if fulltile == 'y':
-        grayT = previousFrame.convert("LA")
-    else:
-        grayT = Image.new("RGBA", (previousFrame.size), (0,0,0,0))
-    grayF = previousFrame.convert("LA")
-    grayF.putdata(sanitize(grayF.getdata()))
+    if not fulltile:
+        replacementTile = Image.new("RGBA", previousFrame.size, (0,0,0,0))
+    grayTile = previousFrame.convert("LA")
+    grayTile.putdata(sanitize(grayTile.getdata()))
     while row < frame.height:
         while col < frame.width:
+            gray = grayTile
             pixelRGBA = previousFrame.getpixel((col, row))
             if ((pixelRGBA[3] == 0)):
                 if not isTransparentGIF:
                     isTransparentGIF = True
                     transparencyXY = (col, row)
-                gray = grayT
                 pixelRGBA = (0,0,0,0)
-            else:
-                gray = grayF
+                if not fulltile:
+                    gray = replacementTile
             color = Image.new("RGBA", frame.size, pixelRGBA)
             comp = Image.composite(gray, color, mask).convert("RGBA")
             newIm.paste(comp, (im.width * col, im.height * row))

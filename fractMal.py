@@ -20,7 +20,7 @@ Image.MAX_IMAGE_PIXELS = None
 
 __author__ = "Andrew Peña"
 __credits__ = ["Andrew Peña", "Malcolm Johnson"]
-__version__ = "0.7.0"
+__version__ = "0.8.0"
 __status__ = "Prototype"
 
 def sanitize(imagedata):

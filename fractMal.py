@@ -23,6 +23,23 @@ __credits__ = ["Andrew Peña", "Malcolm Johnson"]
 __version__ = "0.7.0"
 __status__ = "Prototype"
 
+def sanitize(imagedata):
+    """Sanitizes the transparent pixels from grayscale+alpha image getdata
+
+    Given image data from an Image in "LA" mode, this function scrubs each
+    pixel of invisible color data. This is necessary since PNG has a bad habit
+    of not caring about the RGB values for a pixel with an alpha of 0, and that
+    interferes with the method being used to overlay colors in this program.
+    """
+    cleandata = []
+    for pixel in imagedata:
+        if pixel[1] == 0:
+            newPixel = (0,0)
+        else:
+            newPixel = pixel
+        cleandata.append(newPixel)
+    return cleandata
+
 filename = input("What is the file you wish to tile?: ")
 outname = input("What do you want to save the file as?: ")
 fulltile = input("Enter 'y' if you want a full tile: ").lower()
@@ -51,7 +68,8 @@ for frame in ImageSequence.Iterator(im):
         grayT = previousFrame.convert("LA")
     else:
         grayT = Image.new("RGBA", (previousFrame.size), (0,0,0,0))
-    grayF = previousFrame.convert("L")
+    grayF = previousFrame.convert("LA")
+    grayF.putdata(sanitize(grayF.getdata()))
     while row < frame.height:
         while col < frame.width:
             pixelRGBA = previousFrame.getpixel((col, row))

@@ -23,7 +23,7 @@ Image.MAX_IMAGE_PIXELS = None
 
 __author__ = "Andrew Peña"
 __credits__ = ["Andrew Peña", "Malcolm Johnson"]
-__version__ = "0.9.0"
+__version__ = "0.9.1"
 __status__ = "Prototype"
 
 def sanitize(imagedata):
@@ -45,7 +45,7 @@ def sanitize(imagedata):
 
 filename = input("What is the file you wish to tile?: ")
 outname = input("What do you want to save the file as?: ")
-fulltile = input("Enter 'y' if you want a full tile: ").lower()
+fulltile = input("Enter 'y' if you want a full tile: ").lower() == 'y'
 if not (".gif" in outname or ".bmp" in outname or ".png" in outname
 or ".jpg" in outname): # Gives a default filetype of .png
     outname += ".png"

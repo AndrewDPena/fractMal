@@ -20,7 +20,7 @@ https://stackoverflow.com/a/9208256
 
 from PIL import Image, ImageSequence
 from tkinter import Tk
-from tkinter.filedialog import askopenfilename
+from tkinter.filedialog import askopenfilename, asksaveasfilename
 
 Image.MAX_IMAGE_PIXELS = None
 
@@ -46,65 +46,69 @@ def sanitize(imagedata):
         cleandata.append(newPixel)
     return cleandata
 
-print("Open a File.")
-Tk().withdraw()
-filename = askopenfilename()
-# filename = input("What is the file you wish to tile?: ")
-outname = input("What do you want to save the file as?: ")
-fulltile = input("Enter 'y' if you want a full tile: ").lower() == 'y'
-if not (".gif" in outname or ".bmp" in outname or ".png" in outname
-or ".jpg" in outname): # Gives a default filetype of .png
-    outname += ".png"
-im = Image.open(filename)
-# Changing the mask alpha changes output. Lower alpha, more color but less gif
-# clarity in the tiles.
-mask = Image.new("RGBA", im.size, (0,0,0,50))
-previousFrame = ImageSequence.Iterator(im)[0].convert("RGBA")
-frames = []
-# Possibly unnecessary, this is used to distinguish between gifs with and
-# without transparency, which matters during the save process mostly. The XY
-# is used to locate the transparent pixel in the palette.
-isTransparentGIF = False
-transparencyXY = (0, 0)
-for frame in ImageSequence.Iterator(im):
-    newIm = Image.new("RGBA", (im.width**2, im.height**2), (0,0,0,0))
-    row = col = 0
-    # alpha_composite allows partial/additive gifs to work, but breaks gifs
-    # with motion over a transparent background. This needs to be re-thought.
-    previousFrame.alpha_composite(frame.convert("RGBA"))
-    # previousFrame = frame.convert("RGBA") # This doesn't work
-    if not fulltile:
-        replacementTile = Image.new("RGBA", previousFrame.size, (0,0,0,0))
-    grayTile = previousFrame.convert("LA")
-    grayTile.putdata(sanitize(grayTile.getdata()))
-    while row < frame.height:
-        while col < frame.width:
-            gray = grayTile
-            pixelRGBA = previousFrame.getpixel((col, row))
-            if ((pixelRGBA[3] == 0)):
-                if not isTransparentGIF:
-                    isTransparentGIF = True
-                    transparencyXY = (col, row)
-                pixelRGBA = (0,0,0,0)
-                if not fulltile:
-                    gray = replacementTile
-            color = Image.new("RGBA", frame.size, pixelRGBA)
-            comp = Image.composite(gray, color, mask).convert("RGBA")
-            newIm.paste(comp, (im.width * col, im.height * row))
-            col += 1
-        row += 1
-        col = 0
-    # Un-comment the next line to have access to each individual frame
-    # newIm.save("Frame" + str(frame.tell()+1) + ".png")
-    frames.append(newIm)
-if len(frames) == 1:
-    frames[0].save(outname)
-else:
-    frames[0].save(outname, save_all = True, optimize=True,
-    append_images=frames[1:], backgound=im.info['background'],
-    duration = im.info['duration'], loop=0)
-    if isTransparentGIF:
-        tpLoc = frames[0].convert("P").getpixel(transparencyXY)
-        temp = Image.open(outname)
-        temp.info['transparency'] = tpLoc
-        temp.save("new" + outname, save_all=True)
+def main():
+    print("Open a File.")
+    Tk().withdraw()
+    filename = askopenfilename()
+    print(filename)
+    outname = asksaveasfilename()
+    fulltile = input("Enter 'y' if you want a full tile: ").lower() == 'y'
+    if not (".gif" in outname or ".bmp" in outname or ".png" in outname
+    or ".jpg" in outname): # Gives a default filetype of .png
+        outname += ".png"
+    im = Image.open(filename)
+    # Changing the mask alpha changes output. Lower alpha, more color but less gif
+    # clarity in the tiles.
+    mask = Image.new("RGBA", im.size, (0,0,0,50))
+    previousFrame = ImageSequence.Iterator(im)[0].convert("RGBA")
+    frames = []
+    # Possibly unnecessary, this is used to distinguish between gifs with and
+    # without transparency, which matters during the save process mostly. The XY
+    # is used to locate the transparent pixel in the palette.
+    isTransparentGIF = False
+    transparencyXY = (0, 0)
+    for frame in ImageSequence.Iterator(im):
+        newIm = Image.new("RGBA", (im.width**2, im.height**2), (0,0,0,0))
+        row = col = 0
+        # alpha_composite allows partial/additive gifs to work, but breaks gifs
+        # with motion over a transparent background. This needs to be re-thought.
+        previousFrame.alpha_composite(frame.convert("RGBA"))
+        # previousFrame = frame.convert("RGBA") # This doesn't work
+        if not fulltile:
+            replacementTile = Image.new("RGBA", previousFrame.size, (0,0,0,0))
+        grayTile = previousFrame.convert("LA")
+        grayTile.putdata(sanitize(grayTile.getdata()))
+        while row < frame.height:
+            while col < frame.width:
+                gray = grayTile
+                pixelRGBA = previousFrame.getpixel((col, row))
+                if ((pixelRGBA[3] == 0)):
+                    if not isTransparentGIF:
+                        isTransparentGIF = True
+                        transparencyXY = (col, row)
+                    pixelRGBA = (0,0,0,0)
+                    if not fulltile:
+                        gray = replacementTile
+                color = Image.new("RGBA", frame.size, pixelRGBA)
+                comp = Image.composite(gray, color, mask).convert("RGBA")
+                newIm.paste(comp, (im.width * col, im.height * row))
+                col += 1
+            row += 1
+            col = 0
+        # Un-comment the next line to have access to each individual frame
+        # newIm.save("Frame" + str(frame.tell()+1) + ".png")
+        frames.append(newIm)
+    if len(frames) == 1:
+        frames[0].save(outname)
+    else:
+        frames[0].save(outname, save_all = True, optimize=True,
+        append_images=frames[1:], backgound=im.info['background'],
+        duration = im.info['duration'], loop=0)
+        if isTransparentGIF:
+            tpLoc = frames[0].convert("P").getpixel(transparencyXY)
+            temp = Image.open(outname)
+            temp.info['transparency'] = tpLoc
+            temp.save("new" + outname, save_all=True)
+
+if __name__ == "__main__":
+    main()

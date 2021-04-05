@@ -37,8 +37,8 @@ class FractMal:
         self.outname = ""
         self.fulltile = False
 
-    def sanitize(self, imagedata):
-        """Sanitizes the transparent pixels from grayscale+alpha image getdata
+    def __sanitize(self, imagedata):
+        """Sanitizes the transparent pixels from grayscale+alpha image getdata.
 
         Given image data from an Image in "LA" mode, this function scrubs each
         pixel of invisible color data. This is necessary since PNG has a bad habit
@@ -54,7 +54,14 @@ class FractMal:
             cleandata.append(newPixel)
         return cleandata
 
-    def userInput(self):
+    def __userInput(self):
+        """Gets all user input at once.
+
+        This function opens a series of dialog windows to get the file that the
+        user wants to tile, the filename/location they want to save it as, and
+        whether or not they want the image tiling to include the transparent
+        pixels.
+        """
         Tk().withdraw()
         self.filename = askopenfilename()
         self.outname = asksaveasfilename()
@@ -63,6 +70,16 @@ class FractMal:
             self.outname += ".png" # Gives a default filetype of .png
 
     def tile(self):
+        """Performs tiling of an image based off of user input.
+
+        This function goes through the motions to take an image, built a new
+        image of appropriate size, and tile the original image into the new one.
+        A 'pixel' in the new image is a full copy of the original image.
+        Each 'pixel' tile is colored the same color as the corresponding pixel
+        from the original image.
+        This method finishes by saving the new image in an appropriate spot.
+        """
+        self.__userInput()
         im = Image.open(self.filename)
         # Changing the mask alpha changes output. Lower alpha, more color but less gif
         # clarity in the tiles.
@@ -84,7 +101,7 @@ class FractMal:
             if not self.fulltile:
                 replacementTile = Image.new("RGBA", previousFrame.size, (0,0,0,0))
             grayTile = previousFrame.convert("LA")
-            grayTile.putdata(self.sanitize(grayTile.getdata()))
+            grayTile.putdata(self.__sanitize(grayTile.getdata()))
             while row < frame.height:
                 while col < frame.width:
                     gray = grayTile
@@ -118,6 +135,5 @@ class FractMal:
                 temp.save("new" + self.outname, save_all=True)
 
 if __name__ == "__main__":
-    tiler = FractMal()
-    tiler.userInput()
-    tiler.tile()
+    bigTile = FractMal()
+    bigTile.tile()

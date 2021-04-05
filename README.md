@@ -19,5 +19,8 @@ I am including a .exe as a sort of practice run on pyinstaller. You *should* be 
 
 **Note: This may only work on Windows 64-bit platforms.**
 
+# Known Issues
+* The .exe file crashes if you save as a filename without explicitly naming the extension, rather than safely defaulting to a .png
+
 # Author
 Andrew Peña andrewdpena@gmail.com

@@ -155,4 +155,7 @@ class FractMal:
 
 if __name__ == "__main__":
     bigTile = FractMal()
-    bigTile.tile()
+    while True:
+        bigTile.tile()
+        if not askyesno("Continue?", "Do you wish to tile another image?"):
+            break

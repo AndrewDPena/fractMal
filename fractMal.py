@@ -119,11 +119,8 @@ class FractMal:
         mask = Image.new("RGBA", self.im.size, (0,0,0,50))
         previousFrame = ImageSequence.Iterator(self.im)[0].convert("RGBA")
         frames = []
-        # Possibly unnecessary, this is used to distinguish between gifs with and
-        # without transparency, which matters during the save process mostly. The XY
-        # is used to locate the transparent pixel in the palette.
-        # Self.isTransparentGIF = False # moved to __init__
-        # self.transparencyXY = (0, 0)
+        if not self.fulltile:
+            replacementTile = Image.new("RGBA", previousFrame.size, (0,0,0,0))
         for frame in ImageSequence.Iterator(self.im):
             newIm = Image.new("RGBA", (self.im.width**2, self.im.height**2), (0,0,0,0))
             row = col = 0
@@ -131,8 +128,6 @@ class FractMal:
             # with motion over a transparent background. This needs to be re-thought.
             previousFrame.alpha_composite(frame.convert("RGBA"))
             # previousFrame = frame.convert("RGBA") # This doesn't work
-            if not self.fulltile:
-                replacementTile = Image.new("RGBA", previousFrame.size, (0,0,0,0))
             grayTile = previousFrame.convert("LA")
             grayTile.putdata(self.__sanitize(grayTile.getdata()))
             while row < frame.height:

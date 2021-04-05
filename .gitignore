@@ -2,3 +2,9 @@
 *.jpg
 *.gif
 *.bmp
+
+# Directories that pyinstaller created
+/__pycache__/*
+/build/*
+/dist/*
+*.spec

@@ -6,11 +6,11 @@ recolors each tile to match the RGB value of the corresponding pixel from the
 original image. RGB images of over 128x128 run into memory issues at the
 moment.
 
-Current Issues:
-- Works poorly on gifs with movement across a transparent background, since it
-simply pastes each frame over the previous frame
-
 Recent Changes:
+- Version 0.9.9: Figured out how to add optional params as a dictionary, only
+    needs a single save branch now
+- Version 0.9.7: It now potentially works correctly when doing gifs across a
+    transparent background.
 - Version 0.9.5: Now uses a if elif else branch to save only a single gif.
 
 Resources used:
@@ -28,8 +28,8 @@ Image.MAX_IMAGE_PIXELS = None
 
 __author__ = "Andrew Peña"
 __credits__ = ["Andrew Peña", "Malcolm Johnson"]
-__version__ = "0.9.5"
-__status__ = "Prototype"
+__version__ = "0.9.9"
+__status__ = "Alpha"
 
 class FractMal:
     def __init__(self):
@@ -79,22 +79,21 @@ class FractMal:
         """Saves the given list as an image.
 
         Frames should be a list of at least one image. If it is a single image,
-        the save function works the way you want it to. If it is a series of
-        images, this function must contend with how absolutely godawful Pillow
-        is at handling gifs.
+        the save function simply saves a single frame. If it is a gif, it has
+        to compile a lot of extra info, and must handle transparency as an
+        optional parameter if it was ever encountered during image tiling.
         """
         if len(frames) == 1:
             frames[0].save(self.outname)
-        elif self.isTransparentGIF:
-            # tpLoc and the transparency dict entry handled here
-            tpLoc = frames[0].convert("P").getpixel(self.transparencyXY)
-            frames[0].save(self.outname, save_all = True, optimize=True,
-            append_images=frames[1:], backgound=self.im.info['background'],
-            duration = self.im.info['duration'], loop=0, transparency=tpLoc)
         else:
-            frames[0].save(self.outname, save_all = True, optimize=True,
-            append_images=frames[1:], backgound=self.im.info['background'],
-            duration = self.im.info['duration'], loop=0)
+            # tpLoc and the transparency dict entry handled here
+            params = {'fp': self.outname, 'save_all': True, 'optimize': True,
+            'append_images':frames[1:], 'background':self.im.info['background'],
+            'duration': self.im.info['duration'], 'loop': 0, 'disposal': 2}
+            if self.isTransparentGIF:
+                tpLoc = frames[0].convert("P").getpixel(self.transparencyXY)
+                params['transparency'] = tpLoc
+            frames[0].save(**params)
         if os.path.exists(self.outname):
             showinfo("Success", "Your file was successfully tiled.")
         else:
@@ -124,16 +123,15 @@ class FractMal:
         for frame in ImageSequence.Iterator(self.im):
             newIm = Image.new("RGBA", (self.im.width**2, self.im.height**2), (0,0,0,0))
             row = col = 0
-            # alpha_composite allows partial/additive gifs to work, but breaks gifs
-            # with motion over a transparent background. This needs to be re-thought.
-            previousFrame.alpha_composite(frame.convert("RGBA"))
+            # These are now unnecessary. Maybe Pillow updated? Or...?
+            # previousFrame.alpha_composite(frame.convert("RGBA"))
             # previousFrame = frame.convert("RGBA") # This doesn't work
-            grayTile = previousFrame.convert("LA")
+            grayTile = frame.convert("LA")
             grayTile.putdata(self.__sanitize(grayTile.getdata()))
             while row < frame.height:
                 while col < frame.width:
                     gray = grayTile
-                    pixelRGBA = previousFrame.getpixel((col, row))
+                    pixelRGBA = frame.convert("RGBA").getpixel((col, row))
                     if ((pixelRGBA[3] == 0)):
                         if not self.isTransparentGIF:
                             self.isTransparentGIF = True

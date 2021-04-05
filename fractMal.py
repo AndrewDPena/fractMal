@@ -10,24 +10,25 @@ Current Issues:
 - Works poorly on gifs with movement across a transparent background, since it
 simply pastes each frame over the previous frame
 
-- Saves two files for transparent gifs, Pillow's image library seems resistant
-to saving in place.
+Recent Changes:
+- Version 0.9.5: Now uses a if elif else branch to save only a single gif.
 
 Resources used:
 How to use alpha layer and Image.composite() to add a colored overlay
 https://stackoverflow.com/a/9208256
 """
 
+import os
 from PIL import Image, ImageSequence
 from tkinter import Tk
 from tkinter.filedialog import askopenfilename, asksaveasfilename
-from tkinter.messagebox import askyesno
+from tkinter.messagebox import askyesno, showinfo, showwarning
 
 Image.MAX_IMAGE_PIXELS = None
 
 __author__ = "Andrew Peña"
 __credits__ = ["Andrew Peña", "Malcolm Johnson"]
-__version__ = "0.9.2"
+__version__ = "0.9.5"
 __status__ = "Prototype"
 
 class FractMal:
@@ -36,6 +37,8 @@ class FractMal:
         self.fullname = ""
         self.outname = ""
         self.fulltile = False
+        self.isTransparentGIF = False
+        self.transparencyXY = (0, 0)
 
     def __sanitize(self, imagedata):
         """Sanitizes the transparent pixels from grayscale+alpha image getdata.
@@ -69,6 +72,31 @@ class FractMal:
         if not any(extension in self.outname for extension in self.extensions):
             self.outname += ".png" # Gives a default filetype of .png
 
+    def __saveOut(self, frames):
+        """Saves the given list as an image.
+
+        Frames should be a list of at least one image. If it is a single image,
+        the save function works the way you want it to. If it is a series of
+        images, this function must contend with how absolutely godawful Pillow
+        is at handling gifs.
+        """
+        if len(frames) == 1:
+            frames[0].save(self.outname)
+        elif self.isTransparentGIF:
+            # tpLoc and the transparency dict entry handled here
+            tpLoc = frames[0].convert("P").getpixel(self.transparencyXY)
+            frames[0].save(self.outname, save_all = True, optimize=True,
+            append_images=frames[1:], backgound=self.im.info['background'],
+            duration = self.im.info['duration'], loop=0, transparency=tpLoc)
+        else:
+            frames[0].save(self.outname, save_all = True, optimize=True,
+            append_images=frames[1:], backgound=self.im.info['background'],
+            duration = self.im.info['duration'], loop=0)
+        if os.path.exists(self.outname):
+            showinfo("Success", "Your file was successfully tiled.")
+        else:
+            showwarning("Failure", "Something went wrong, sorry.")
+
     def tile(self):
         """Performs tiling of an image based off of user input.
 
@@ -80,19 +108,19 @@ class FractMal:
         This method finishes by saving the new image in an appropriate spot.
         """
         self.__userInput()
-        im = Image.open(self.filename)
+        self.im = Image.open(self.filename)
         # Changing the mask alpha changes output. Lower alpha, more color but less gif
         # clarity in the tiles.
-        mask = Image.new("RGBA", im.size, (0,0,0,50))
-        previousFrame = ImageSequence.Iterator(im)[0].convert("RGBA")
+        mask = Image.new("RGBA", self.im.size, (0,0,0,50))
+        previousFrame = ImageSequence.Iterator(self.im)[0].convert("RGBA")
         frames = []
         # Possibly unnecessary, this is used to distinguish between gifs with and
         # without transparency, which matters during the save process mostly. The XY
         # is used to locate the transparent pixel in the palette.
-        isTransparentGIF = False
-        transparencyXY = (0, 0)
-        for frame in ImageSequence.Iterator(im):
-            newIm = Image.new("RGBA", (im.width**2, im.height**2), (0,0,0,0))
+        # Self.isTransparentGIF = False # moved to __init__
+        # self.transparencyXY = (0, 0)
+        for frame in ImageSequence.Iterator(self.im):
+            newIm = Image.new("RGBA", (self.im.width**2, self.im.height**2), (0,0,0,0))
             row = col = 0
             # alpha_composite allows partial/additive gifs to work, but breaks gifs
             # with motion over a transparent background. This needs to be re-thought.
@@ -107,32 +135,23 @@ class FractMal:
                     gray = grayTile
                     pixelRGBA = previousFrame.getpixel((col, row))
                     if ((pixelRGBA[3] == 0)):
-                        if not isTransparentGIF:
-                            isTransparentGIF = True
-                            transparencyXY = (col, row)
+                        if not self.isTransparentGIF:
+                            self.isTransparentGIF = True
+                            self.transparencyXY = (col, row)
                         pixelRGBA = (0,0,0,0)
                         if not self.fulltile:
                             gray = replacementTile
                     color = Image.new("RGBA", frame.size, pixelRGBA)
                     comp = Image.composite(gray, color, mask).convert("RGBA")
-                    newIm.paste(comp, (im.width * col, im.height * row))
+                    newIm.paste(comp, (self.im.width * col, self.im.height * row))
                     col += 1
                 row += 1
                 col = 0
             # Un-comment the next line to have access to each individual frame
             # newIm.save("Frame" + str(frame.tell()+1) + ".png")
             frames.append(newIm)
-        if len(frames) == 1:
-            frames[0].save(self.outname)
-        else:
-            frames[0].save(self.outname, save_all = True, optimize=True,
-            append_images=frames[1:], backgound=im.info['background'],
-            duration = im.info['duration'], loop=0)
-            if isTransparentGIF:
-                tpLoc = frames[0].convert("P").getpixel(transparencyXY)
-                temp = Image.open(self.outname)
-                temp.info['transparency'] = tpLoc
-                temp.save("new" + self.outname, save_all=True)
+        self.__saveOut(frames)
+
 
 if __name__ == "__main__":
     bigTile = FractMal()

@@ -19,6 +19,9 @@ https://stackoverflow.com/a/9208256
 """
 
 from PIL import Image, ImageSequence
+from tkinter import Tk
+from tkinter.filedialog import askopenfilename
+
 Image.MAX_IMAGE_PIXELS = None
 
 __author__ = "Andrew Peña"
@@ -43,7 +46,10 @@ def sanitize(imagedata):
         cleandata.append(newPixel)
     return cleandata
 
-filename = input("What is the file you wish to tile?: ")
+print("Open a File.")
+Tk().withdraw()
+filename = askopenfilename()
+# filename = input("What is the file you wish to tile?: ")
 outname = input("What do you want to save the file as?: ")
 fulltile = input("Enter 'y' if you want a full tile: ").lower() == 'y'
 if not (".gif" in outname or ".bmp" in outname or ".png" in outname

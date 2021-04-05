@@ -68,9 +68,12 @@ class FractMal:
         Tk().withdraw()
         self.filename = askopenfilename()
         self.outname = asksaveasfilename()
+        if not self.filename or not self.outname:
+            return False
         self.fulltile = askyesno('Fulltile', "Do you want transparent tiles to show the image too?")
         if not any(extension in self.outname for extension in self.extensions):
             self.outname += ".png" # Gives a default filetype of .png
+        return True
 
     def __saveOut(self, frames):
         """Saves the given list as an image.
@@ -107,7 +110,9 @@ class FractMal:
         from the original image.
         This method finishes by saving the new image in an appropriate spot.
         """
-        self.__userInput()
+        if not self.__userInput():
+            showwarning("Failue", "Something went wrong.")
+            return
         self.im = Image.open(self.filename)
         # Changing the mask alpha changes output. Lower alpha, more color but less gif
         # clarity in the tiles.

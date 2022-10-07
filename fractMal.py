@@ -31,16 +31,19 @@ __credits__ = ["Andrew Peña", "Malcolm Johnson"]
 __version__ = "0.9.9"
 __status__ = "Alpha"
 
+
 class FractMal:
     def __init__(self):
+        self.working_image = None
         self.extensions = ['.gif', '.jpg', '.png', '.bmp']
         self.fullname = ""
-        self.outname = ""
-        self.fulltile = False
+        self.output_name = ""
+        self.full_tile = False
         self.isTransparentGIF = False
         self.transparencyXY = (0, 0)
 
-    def __sanitize(self, imagedata):
+    @staticmethod
+    def __sanitize(imagedata):
         """Sanitizes the transparent pixels from grayscale+alpha image getdata.
 
         Given image data from an Image in "LA" mode, this function scrubs each
@@ -51,31 +54,31 @@ class FractMal:
         cleandata = []
         for pixel in imagedata:
             if pixel[1] == 0:
-                newPixel = (0,0)
+                new_pixel = (0, 0)
             else:
-                newPixel = pixel
-            cleandata.append(newPixel)
+                new_pixel = pixel
+            cleandata.append(new_pixel)
         return cleandata
 
-    def __userInput(self):
+    def __user_input(self):
         """Gets all user input at once.
 
         This function opens a series of dialog windows to get the file that the
         user wants to tile, the filename/location they want to save it as, and
-        whether or not they want the image tiling to include the transparent
+        whether they want the image tiling to include the transparent
         pixels.
         """
         Tk().withdraw()
         self.filename = askopenfilename()
-        self.outname = asksaveasfilename()
-        if not self.filename or not self.outname:
+        self.output_name = asksaveasfilename()
+        if not self.filename or not self.output_name:
             return False
-        self.fulltile = askyesno('Fulltile', "Do you want transparent tiles to show the image too?")
-        if not any(extension in self.outname for extension in self.extensions):
-            self.outname += ".png" # Gives a default filetype of .png
+        self.full_tile = askyesno('Full tile', "Do you want transparent tiles to show the image too?")
+        if not any(extension in self.output_name for extension in self.extensions):
+            self.output_name += ".png"  # Gives a default filetype of .png
         return True
 
-    def __saveOut(self, frames):
+    def __save_out(self, frames):
         """Saves the given list as an image.
 
         Frames should be a list of at least one image. If it is a single image,
@@ -84,17 +87,17 @@ class FractMal:
         optional parameter if it was ever encountered during image tiling.
         """
         if len(frames) == 1:
-            frames[0].save(self.outname)
+            frames[0].save(self.output_name)
         else:
-            # tpLoc and the transparency dict entry handled here
-            params = {'fp': self.outname, 'save_all': True, 'optimize': True,
-            'append_images':frames[1:], 'background':self.im.info['background'],
-            'duration': self.im.info['duration'], 'loop': 0, 'disposal': 2}
+            # tp_loc and the transparency dict entry handled here
+            params = {'fp': self.output_name, 'save_all': True, 'optimize': True,
+                      'append_images': frames[1:], 'background': self.working_image.info['background'],
+                      'duration': self.working_image.info['duration'], 'loop': 0, 'disposal': 2}
             if self.isTransparentGIF:
-                tpLoc = frames[0].convert("P").getpixel(self.transparencyXY)
-                params['transparency'] = tpLoc
+                tp_loc = frames[0].convert("P").getpixel(self.transparencyXY)
+                params['transparency'] = tp_loc
             frames[0].save(**params)
-        if os.path.exists(self.outname):
+        if os.path.exists(self.output_name):
             showinfo("Success", "Your file was successfully tiled.")
         else:
             showwarning("Failure", "Something went wrong, sorry.")
@@ -109,46 +112,46 @@ class FractMal:
         from the original image.
         This method finishes by saving the new image in an appropriate spot.
         """
-        if not self.__userInput():
-            showwarning("Failue", "Something went wrong.")
+        if not self.__user_input():
+            showwarning("Failure", "Something went wrong.")
             return
-        self.im = Image.open(self.filename)
+        self.working_image = Image.open(self.filename)
         # Changing the mask alpha changes output. Lower alpha, more color but less gif
         # clarity in the tiles.
-        mask = Image.new("RGBA", self.im.size, (0,0,0,50))
-        previousFrame = ImageSequence.Iterator(self.im)[0].convert("RGBA")
+        mask = Image.new("RGBA", self.working_image.size, (0, 0, 0, 50))
+        previous_frame = ImageSequence.Iterator(self.working_image)[0].convert("RGBA")
         frames = []
-        if not self.fulltile:
-            replacementTile = Image.new("RGBA", previousFrame.size, (0,0,0,0))
-        for frame in ImageSequence.Iterator(self.im):
-            newIm = Image.new("RGBA", (self.im.width**2, self.im.height**2), (0,0,0,0))
+        # replacement_tile is a blank tile to replace all transparent tiles
+        replacement_tile = Image.new("RGBA", previous_frame.size, (0, 0, 0, 0))
+        for frame in ImageSequence.Iterator(self.working_image):
+            new_im = Image.new("RGBA", (self.working_image.width ** 2, self.working_image.height ** 2), (0, 0, 0, 0))
             row = col = 0
             # These are now unnecessary. Maybe Pillow updated? Or...?
-            # previousFrame.alpha_composite(frame.convert("RGBA"))
-            # previousFrame = frame.convert("RGBA") # This doesn't work
-            grayTile = frame.convert("LA")
-            grayTile.putdata(self.__sanitize(grayTile.getdata()))
+            # previous_frame.alpha_composite(frame.convert("RGBA"))
+            # previous_frame = frame.convert("RGBA") # This doesn't work
+            gray_tile = frame.convert("LA")
+            gray_tile.putdata(self.__sanitize(gray_tile.getdata()))
             while row < frame.height:
                 while col < frame.width:
-                    gray = grayTile
-                    pixelRGBA = frame.convert("RGBA").getpixel((col, row))
-                    if ((pixelRGBA[3] == 0)):
+                    gray = gray_tile
+                    pixel_rgba = frame.convert("RGBA").getpixel((col, row))
+                    if pixel_rgba[3] == 0:
                         if not self.isTransparentGIF:
                             self.isTransparentGIF = True
                             self.transparencyXY = (col, row)
-                        pixelRGBA = (0,0,0,0)
-                        if not self.fulltile:
-                            gray = replacementTile
-                    color = Image.new("RGBA", frame.size, pixelRGBA)
+                        pixel_rgba = (0, 0, 0, 0)
+                        if not self.full_tile:
+                            gray = replacement_tile
+                    color = Image.new("RGBA", frame.size, pixel_rgba)
                     comp = Image.composite(gray, color, mask).convert("RGBA")
-                    newIm.paste(comp, (self.im.width * col, self.im.height * row))
+                    new_im.paste(comp, (self.working_image.width * col, self.working_image.height * row))
                     col += 1
                 row += 1
                 col = 0
             # Un-comment the next line to have access to each individual frame
-            # newIm.save("Frame" + str(frame.tell()+1) + ".png")
-            frames.append(newIm)
-        self.__saveOut(frames)
+            # new_im.save("Frame" + str(frame.tell()+1) + ".png")
+            frames.append(new_im)
+        self.__save_out(frames)
 
 
 if __name__ == "__main__":

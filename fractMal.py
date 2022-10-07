@@ -39,8 +39,6 @@ class FractMal:
         self.fullname = ""
         self.output_name = ""
         self.full_tile = False
-        self.isTransparentGIF = False
-        self.transparencyXY = (0, 0)
 
     @staticmethod
     def __sanitize(imagedata):
@@ -92,10 +90,8 @@ class FractMal:
             # tp_loc and the transparency dict entry handled here
             params = {'fp': self.output_name, 'save_all': True, 'optimize': True,
                       'append_images': frames[1:], 'background': self.working_image.info['background'],
-                      'duration': self.working_image.info['duration'], 'loop': 0, 'disposal': 2}
-            if self.isTransparentGIF:
-                tp_loc = frames[0].convert("P").getpixel(self.transparencyXY)
-                params['transparency'] = tp_loc
+                      'duration': self.working_image.info['duration'], 'loop': 0, 'disposal': 2,
+                      'include_color_table': True}
             frames[0].save(**params)
         if os.path.exists(self.output_name):
             showinfo("Success", "Your file was successfully tiled.")
@@ -136,9 +132,6 @@ class FractMal:
                     gray = gray_tile
                     pixel_rgba = frame.convert("RGBA").getpixel((col, row))
                     if pixel_rgba[3] == 0:
-                        if not self.isTransparentGIF:
-                            self.isTransparentGIF = True
-                            self.transparencyXY = (col, row)
                         pixel_rgba = (0, 0, 0, 0)
                         if not self.full_tile:
                             gray = replacement_tile

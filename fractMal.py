@@ -12,6 +12,8 @@ Recent Changes:
 - Version 0.9.7: It now potentially works correctly when doing gifs across a
     transparent background.
 - Version 0.9.5: Now uses a if elif else branch to save only a single gif.
+- Version 0.9.10: Removed flawed transparency logic that led to poor performance
+    with transparent gifs.
 
 Resources used:
 How to use alpha layer and Image.composite() to add a colored overlay
@@ -28,7 +30,7 @@ Image.MAX_IMAGE_PIXELS = None
 
 __author__ = "Andrew Peña"
 __credits__ = ["Andrew Peña", "Malcolm Johnson"]
-__version__ = "0.9.9"
+__version__ = "0.9.10"
 __status__ = "Alpha"
 
 
@@ -122,9 +124,6 @@ class FractMal:
         for frame in ImageSequence.Iterator(self.working_image):
             new_im = Image.new("RGBA", (self.working_image.width ** 2, self.working_image.height ** 2), (0, 0, 0, 0))
             row = col = 0
-            # These are now unnecessary. Maybe Pillow updated? Or...?
-            # previous_frame.alpha_composite(frame.convert("RGBA"))
-            # previous_frame = frame.convert("RGBA") # This doesn't work
             gray_tile = frame.convert("LA")
             gray_tile.putdata(self.__sanitize(gray_tile.getdata()))
             while row < frame.height:
